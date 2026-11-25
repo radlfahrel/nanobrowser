@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>nanobrowser</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      font: 16px system-ui, sans-serif;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+    }
+
+    form {
+      display: flex;
+      gap: 8px;
+      padding: 10px;
+      background: #f1f3f5;
+      border-bottom: 1px solid #ccc;
+    }
+
+    input {
+      flex: 1;
+      min-width: 0;
+      padding: 9px 12px;
+      border: 1px solid #aaa;
+      border-radius: 6px;
+      font: inherit;
+    }
+
+    button {
+      padding: 8px 12px;
+      border: 1px solid #aaa;
+      border-radius: 6px;
+      background: white;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    iframe {
+      flex: 1;
+      width: 100%;
+      border: 0;
+    }
+  </style>
+</head>
+<body>
+  <form id="addressForm">
+    <button type="button" id="back" title="Zurück">←</button>
+    <button type="button" id="forward" title="Vorwärts">→</button>
+    <button type="button" id="reload" title="Neu laden">⟳</button>
+    <input id="address" type="text" placeholder="Adresse eingeben, z. B. example.com"
+           aria-label="Webadresse" autocomplete="url">
+    <button type="submit">load</button>
+  </form>
+
+  <iframe id="page" title="Webseite" src="about:blank"></iframe>
+
+  <script>
+    const form = document.getElementById("addressForm");
+    const address = document.getElementById("address");
+    const page = document.getElementById("page");
+    const history = [];
+    let historyIndex = -1;
+
+    function loadAddress(value, addToHistory = true) {
+      let url;
+
+      try {
+        url = new URL(/^https?:\/\//i.test(value) ? value : `https://${value}`);
+      } catch {
+        address.setCustomValidity("Please enter a valid URL");
+        address.reportValidity();
+        return;
+      }
+
+      if (!["http:", "https:"].includes(url.protocol)) {
+        address.setCustomValidity("Only HTTP- or HTTPS allowed.");
+        address.reportValidity();
+        return;
+      }
+
+      address.setCustomValidity("");
+      address.value = url.href;
+      page.src = url.href;
+
+      if (addToHistory) {
+        history.splice(historyIndex + 1);
+        history.push(url.href);
+        historyIndex = history.length - 1;
+      }
+    }
+
+    form.addEventListener("submit", event => {
+      event.preventDefault();
+      loadAddress(address.value.trim());
+    });
+
+    document.getElementById("back").addEventListener("click", () => {
+      if (historyIndex > 0) {
+        historyIndex--;
+        loadAddress(history[historyIndex], false);
+      }
+    });
+
+    document.getElementById("forward").addEventListener("click", () => {
+      if (historyIndex < history.length - 1) {
+        historyIndex++;
+        loadAddress(history[historyIndex], false);
+      }
+    });
+
+    document.getElementById("reload").addEventListener("click", () => {
+      if (page.src !== "about:blank") page.src = page.src;
+    });
+  </script>
+</body>
+</html>
